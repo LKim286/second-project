@@ -1,0 +1,24 @@
+{
+  "name": "model-harness-pipeline",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Стартер: harness для модели Cursor SDK и свой пайплайн",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "harness": "tsx src/01-create-harness.ts",
+    "pipeline": "tsx src/02-custom-pipeline.ts",
+    "pipeline:cloud": "tsx src/02-custom-pipeline.ts --cloud",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cursor/sdk": "^1.0.23"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
+  }
+}
