@@ -1,96 +1,111 @@
-# NorthCart — батч-признаки
+# NorthCart — батч-признаки + Airflow DAG
 
-Модуль расчёта батч-признаков для пары `customer_id` × `run_date`.  
-Вся логика фильтрации и агрегаций находится в `src/batch_features/` — DAG и Jupyter только вызывают эти функции.
+Модуль `src/batch_features/` содержит всю логику расчёта.  
+DAG `dags/northcart_batch_features_dag.py` только вызывает функции модуля и сохраняет результат.
 
-## Структура
+## Структура для Airflow
+
+Положите репозиторий так, чтобы Airflow видел обе папки (типичный `airflowtemplate`):
 
 ```text
-src/batch_features/
-  __init__.py
-  pipeline.py          # load / preprocess / features / save
-examples/check_features.py
-tests/test_batch_features.py
-requirements.txt
+airflowtemplate/          # корень, который монтируется в Airflow
+  dags/
+    northcart_batch_features_dag.py
+  src/
+    batch_features/
+      __init__.py
+      pipeline.py
+  requirements.txt
 ```
+
+Если у вас уже есть `airflowtemplate/`, скопируйте туда `dags/` и `src/`.
 
 ## Функции модуля
 
 | Функция | Назначение |
 |---|---|
-| `load_source_tables(engine)` | Читает `customers`, `sessions`, `events`, `orders` |
-| `preprocess_customers/sessions/events/orders` | Типы, дедуп, отсечение по `run_date` |
-| `add_event_window_features(...)` | page_view / add_to_cart / purchase / product за 7 и 30 дней |
-| `add_session_features(...)` | число сессий и средняя длина за 30 дней |
-| `add_order_features(...)` | давность покупки, число/сумма/средний чек заказов |
-| `add_conversion_features(...)` | конверсии воронки |
-| `build_batch_features(...)` | собирает итоговую таблицу (1 строка на клиента) |
-| `save_features(...)` | сохраняет parquet (локально или `s3://...`) |
-| `run_pipeline(...)` | полный цикл для DAG / ноутбука |
+| `load_source_tables` | чтение PostgreSQL |
+| `preprocess_*` | типы, дедуп, `< run_date` |
+| `add_event_window_features` | события / товары за 7 и 30 дней |
+| `add_session_features` | сессии + средняя длина |
+| `add_order_features` | заказы и деньги |
+| `add_conversion_features` | конверсии воронки |
+| `build_batch_features` | итоговая таблица |
+| `save_features` | parquet (local / S3) |
+| `create_db_engine_from_airflow_connection` | креды из Airflow Connection |
 
-## Обязательные правила
+## Настройка Airflow
 
-- events: `timestamp < run_date`
-- sessions: `start_time < run_date`
-- orders: `order_time < run_date`
-- дедуп событий по `event_id`
-- товарные признаки только при заданном `product_id`
-- денежные признаки только из `orders`
-- без данных из будущего
+### 1) Connection (Admin → Connections)
 
-## Установка
+| Поле | Значение |
+|---|---|
+| Conn Id | `northcart_postgres` |
+| Conn Type | Postgres |
+| Host | хост из практикума |
+| Schema | имя БД |
+| Login | пользователь |
+| Password | пароль |
+| Port | `6432` |
+
+### 2) Variables (Admin → Variables)
+
+| Key | Пример |
+|---|---|
+| `NORTHCART_PG_CONN_ID` | `northcart_postgres` |
+| `NORTHCART_S3_BUCKET` | имя бакета |
+| `NORTHCART_S3_PREFIX` | `batch_features` |
+| `NORTHCART_S3_ENDPOINT` | `https://storage.yandexcloud.net` |
+| `NORTHCART_AWS_ACCESS_KEY_ID` | ключ S3 |
+| `NORTHCART_AWS_SECRET_ACCESS_KEY` | секрет S3 |
+
+Если `NORTHCART_S3_BUCKET` пустой — DAG сохранит файл локально в `outputs/`.
+
+### 3) Зависимости воркера
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Переменные окружения для PostgreSQL
+## Запуск DAG
 
-```bash
-export PG_USER=...
-export PG_PASSWORD=...
-export PG_HOST=...
-export PG_PORT=6432
-export PG_DB=...
+В UI: DAG `northcart_batch_features` → Trigger DAG w/ config:
+
+```json
+{
+  "run_date": "2025-08-01"
+}
 ```
 
-## Пример из Jupyter / скрипта
+Или CLI:
+
+```bash
+airflow dags trigger northcart_batch_features --conf '{"run_date": "2025-08-01"}'
+```
+
+Для исторического и инференсного срезов просто запускайте DAG с разными `run_date`.
+
+## Проверка из Jupyter (та же логика)
 
 ```python
 import sys
 sys.path.append("src")
 
 from datetime import datetime
-from batch_features import create_db_engine, load_source_tables, build_batch_features, save_features
+from batch_features import create_db_engine, load_source_tables, build_batch_features
 
-engine = create_db_engine()
+engine = create_db_engine(user="...", password="...", host="...", db="...")
 tables = load_source_tables(engine)
-
-run_date = datetime(2025, 8, 1)
 features = build_batch_features(
-    tables["customers"],
-    tables["sessions"],
-    tables["events"],
-    tables["orders"],
-    run_date=run_date,
+    tables["customers"], tables["sessions"], tables["events"], tables["orders"],
+    run_date=datetime(2025, 8, 1),
 )
-
 assert features.duplicated(["customer_id", "run_date"]).sum() == 0
-save_features(features, "outputs", run_date=run_date)
-features.head()
 ```
 
-Или одной командой:
+## Тесты без БД/Airflow
 
 ```bash
-python examples/check_features.py --run-date 2025-08-01
-```
-
-## Тесты (без БД)
-
-```bash
-pip install pytest
-pytest -q
+pip install pytest pandas numpy sqlalchemy pyarrow
+PYTHONPATH=src pytest -q
 ```

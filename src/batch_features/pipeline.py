@@ -63,6 +63,27 @@ def create_db_engine(
     return create_engine(url)
 
 
+def create_db_engine_from_airflow_connection(conn_id: str = "northcart_postgres") -> Engine:
+    """
+    Берёт креды из Airflow Connection (Admin → Connections).
+
+    Ожидаемые поля Connection:
+    - Conn Id: northcart_postgres (или переданный conn_id)
+    - Conn Type: Postgres
+    - Host / Schema(db) / Login / Password / Port
+    """
+    from airflow.hooks.base import BaseHook
+
+    conn = BaseHook.get_connection(conn_id)
+    return create_db_engine(
+        user=conn.login,
+        password=conn.password,
+        host=conn.host,
+        port=conn.port or 6432,
+        db=conn.schema,
+    )
+
+
 def load_source_tables(engine: Engine) -> Dict[str, pd.DataFrame]:
     """Читает таблицы customers, sessions, events, orders из PostgreSQL."""
     tables = ("customers", "sessions", "events", "orders")
@@ -409,11 +430,13 @@ def save_features(
     features: pd.DataFrame,
     path: Union[str, Path],
     run_date: Optional[Union[str, datetime, pd.Timestamp]] = None,
+    storage_options: Optional[dict] = None,
 ) -> str:
     """
     Сохраняет таблицу признаков в parquet (локально или в s3://...).
 
     Если path — директория, файл будет features_YYYY-MM-DD.parquet.
+    Для Yandex Object Storage передайте storage_options с ключами и endpoint_url.
     """
     path_str = str(path)
     if run_date is not None:
@@ -432,15 +455,36 @@ def save_features(
     # локальные директории создаём заранее
     if not out_path.startswith("s3://"):
         Path(out_path).parent.mkdir(parents=True, exist_ok=True)
+        features.to_parquet(out_path, index=False)
+    else:
+        features.to_parquet(out_path, index=False, storage_options=storage_options or {})
 
-    features.to_parquet(out_path, index=False)
     return out_path
+
+
+def get_yandex_s3_storage_options(
+    aws_access_key_id: Optional[str] = None,
+    aws_secret_access_key: Optional[str] = None,
+    endpoint_url: str = "https://storage.yandexcloud.net",
+) -> dict:
+    """storage_options для pandas/s3fs при записи в Yandex Object Storage."""
+    key = aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID")
+    secret = aws_secret_access_key or os.getenv("AWS_SECRET_ACCESS_KEY")
+    if not key or not secret:
+        raise ValueError("Не заданы AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY для S3")
+    return {
+        "key": key,
+        "secret": secret,
+        "client_kwargs": {"endpoint_url": endpoint_url},
+    }
 
 
 def run_pipeline(
     run_date: Union[str, datetime, pd.Timestamp],
     engine: Optional[Engine] = None,
     output_path: Optional[Union[str, Path]] = None,
+    storage_options: Optional[dict] = None,
+    airflow_conn_id: Optional[str] = None,
     **db_kwargs,
 ) -> pd.DataFrame:
     """
@@ -448,7 +492,10 @@ def run_pipeline(
     Удобно вызывать из Jupyter или из DAG.
     """
     if engine is None:
-        engine = create_db_engine(**db_kwargs)
+        if airflow_conn_id:
+            engine = create_db_engine_from_airflow_connection(airflow_conn_id)
+        else:
+            engine = create_db_engine(**db_kwargs)
 
     tables = load_source_tables(engine)
     features = build_batch_features(
@@ -460,6 +507,46 @@ def run_pipeline(
     )
 
     if output_path is not None:
-        save_features(features, output_path, run_date=run_date)
+        save_features(
+            features,
+            output_path,
+            run_date=run_date,
+            storage_options=storage_options,
+        )
 
     return features
+
+
+def validate_features(features: pd.DataFrame, run_date: Union[str, datetime, pd.Timestamp]) -> None:
+    """Базовые проверки перед сохранением (для задачи Airflow)."""
+    rd = _parse_run_date(run_date)
+    if features.empty:
+        raise ValueError("Итоговая таблица признаков пустая")
+    if features.duplicated(["customer_id", "run_date"]).any():
+        raise ValueError("Найдены дубликаты пар customer_id × run_date")
+    if not (pd.to_datetime(features["run_date"]) == pd.Timestamp(rd)).all():
+        raise ValueError("В таблице есть run_date, отличный от запрошенного")
+    required = {
+        "customer_id",
+        "run_date",
+        "pageview_7",
+        "pageview_30",
+        "addtocart_7",
+        "addtocart_30",
+        "conv_cart_7",
+        "conv_cart_30",
+        "conv_purchase_7",
+        "conv_purchase_30",
+        "product_7",
+        "product_30",
+        "mean_session",
+        "session_7",
+        "session_30",
+        "order_lasttime",
+        "orders_count",
+        "total_usd_sum",
+        "mean_usd",
+    }
+    missing = required - set(features.columns)
+    if missing:
+        raise ValueError(f"В таблице нет обязательных признаков: {sorted(missing)}")
