@@ -1,0 +1,10 @@
+pandas>=1.3.0,<3
+numpy>=1.21.0
+SQLAlchemy>=1.4.0,<2.1
+psycopg2-binary>=2.9.0
+pyarrow>=10.0.0
+s3fs>=2023.1.0
+boto3>=1.26.0
+python-dotenv>=1.0.0
+# Airflow обычно уже есть в образе практикума; раскомментируйте при локальной установке:
+# apache-airflow>=2.5.0
