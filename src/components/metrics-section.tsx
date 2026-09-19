@@ -4,7 +4,13 @@ import { useMemo, useState } from "react";
 import { Section } from "@/components/section";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BOARD_SCORECARD, LOOPS, METRICS, type Metric } from "@/lib/playbook";
+import {
+  BOARD_SCORECARD,
+  LOOPS,
+  METRICS,
+  metricOwners,
+  type Metric,
+} from "@/lib/playbook";
 import { cn } from "@/lib/utils";
 
 function MetricCard({ metric, board }: { metric: Metric; board: boolean }) {
@@ -40,9 +46,14 @@ function MetricCard({ metric, board }: { metric: Metric; board: boolean }) {
         </div>
       </dl>
       <p className="mt-4 text-sm">
-        <span className="text-muted-foreground">Владелец: </span>
-        {metric.owner}
+        <span className="text-muted-foreground">Основной владелец: </span>
+        {metricOwners(metric).primary.title}
       </p>
+      {metricOwners(metric).co.length ? (
+        <p className="mt-1 text-sm text-muted-foreground">
+          Совладельцы: {metricOwners(metric).co.map((role) => role.title).join(", ")}
+        </p>
+      ) : null}
       <p className="mt-1 text-sm text-destructive/90">Красный флаг: {metric.redFlag}</p>
     </article>
   );
@@ -65,7 +76,7 @@ export function MetricsSection() {
       id="metrics"
       eyebrow="02 — Метрики"
       title="Двенадцать чисел для штаба и розницы. Остальное — приборы доменов"
-      lead="Правлению и коммерческому директору не нужны 80 дашбордов. Одна страница: 12 метрик, владелец, каденция, порог на 12 месяцев / 3 года / 5 лет, красный флаг. Выручки нет — поэтому нет NRR и Rule of 40. Есть касса, акция, пик и стоимость 1000 чеков."
+      lead="Правлению не нужны 80 дашбордов. Board-12 с именным владельцем. CTO доменов держат свои lead time и SLO. Откройте раздел «Владельцы» — фильтр по 14 ролям."
     >
       <div className="flex flex-wrap gap-2">
         <Button

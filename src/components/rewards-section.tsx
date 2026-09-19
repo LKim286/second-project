@@ -5,7 +5,7 @@ export function RewardsSection() {
   return (
     <Section
       id="rewards"
-      eyebrow="04 — Вознаграждение"
+      eyebrow="05 — Вознаграждение"
       title="Платить за кассу, пик и поток. Не за тикеты, часы и героизм"
       lead={REWARDS.thesis}
     >

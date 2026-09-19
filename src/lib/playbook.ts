@@ -1,6 +1,7 @@
 export const NAV = [
   { id: "concept", label: "Концепция" },
   { id: "metrics", label: "Метрики" },
+  { id: "owners", label: "Владельцы" },
   { id: "goals", label: "Дорожная карта" },
   { id: "rewards", label: "Вознаграждение" },
   { id: "culture", label: "Культура" },
@@ -71,13 +72,96 @@ export const LOOPS = [
   },
 ] as const;
 
+export const ROLES = [
+  {
+    id: "biztech",
+    title: "Директор по технологическому развитию бизнеса",
+    mandate:
+      "Портфель ценности: что ИТ меняет для розницы и коммерции, WIP, self-service, зависимость от интеграторов.",
+  },
+  {
+    id: "eng",
+    title: "Директор по разработке",
+    mandate: "Инженерная машина: DORA, качество релизов, toil разработки, встречи IC.",
+  },
+  {
+    id: "ai",
+    title: "Директор по развитию ИИ",
+    mandate:
+      "ИИ в проде на реальных путях, не пилоты. Снятие toil и качество моделей, которые трогают магазин, спрос и контент.",
+  },
+  {
+    id: "data",
+    title: "Директор по данным",
+    mandate: "Свежесть и доверие к цене, остатку, промо и клиенту. Self-service аналитики без тикета.",
+  },
+  {
+    id: "infra",
+    title: "Директор по инфраструктуре и поддержке",
+    mandate: "SLO, MTTR, пик, тикеты магазинов, CAB как поток, а не очередь.",
+  },
+  {
+    id: "cfo",
+    title: "Финансовый директор",
+    mandate: "Стоимость единицы ИТ-сервиса и структура vendor spend. Не освоение бюджета.",
+  },
+  {
+    id: "people",
+    title: "Директор по персоналу",
+    mandate: "Планка найма, удержание топ-квартиля, IC-трек, скорость выхода на продуктивность.",
+  },
+  {
+    id: "retail",
+    title: "Директор по ритейл операциям",
+    mandate: "Голос магазина: NPS, касса в пик, тикеты. Заказчик SLO, не зритель дашборда ИТ.",
+  },
+  {
+    id: "cto-loyalty",
+    title: "CTO маркетинга и лояльности",
+    mandate: "Акция, цена на витрине, идентифицированный чек, кампания без проекта на каждый буклет.",
+  },
+  {
+    id: "cto-corp",
+    title: "CTO корпоративных функций",
+    mandate: "HR, финансы, закупки, офис: типовое — self-service сотрудника, не тикет в ИТ.",
+  },
+  {
+    id: "cto-transport",
+    title: "CTO транспорта",
+    mandate: "Слоты, рейсы, тарифы, трекинг: меняются днями, живут по SLO в пик доставки.",
+  },
+  {
+    id: "cto-supply",
+    title: "CTO цепочек поставок",
+    mandate: "WMS, приёмка, отгрузка, возвраты: доступность склада и скорость изменения процесса.",
+  },
+  {
+    id: "cto-replenish",
+    title: "CTO прогнозирования и пополнения",
+    mandate: "Цикл прогноза и автопополнения в часах. Остаток, которому можно верить.",
+  },
+  {
+    id: "cto-wfm",
+    title: "CTO управления персоналом",
+    mandate:
+      "График магазина, смены, выходы: управляющий меняет сам, без заявки в ИТ. Не путать с HR-директором.",
+  },
+] as const;
+
+export type RoleId = (typeof ROLES)[number]["id"];
+
+export function roleById(id: RoleId) {
+  return ROLES.find((role) => role.id === id)!;
+}
+
 export type Metric = {
   id: string;
   loop: (typeof LOOPS)[number]["id"];
   name: string;
   definition: string;
   formula?: string;
-  owner: string;
+  ownerId: RoleId;
+  coOwnerIds: RoleId[];
   cadence: "неделя" | "месяц" | "квартал";
   localChampion: string;
   year1: string;
@@ -85,6 +169,13 @@ export type Metric = {
   year5: string;
   redFlag: string;
 };
+
+export function metricOwners(metric: Metric) {
+  return {
+    primary: roleById(metric.ownerId),
+    co: metric.coOwnerIds.map(roleById),
+  };
+}
 
 export const METRICS: Metric[] = [
   {
@@ -94,7 +185,8 @@ export const METRICS: Metric[] = [
     definition:
       "Медиана календарных дней от утверждённой потребности коммерции/операций до работающего изменения в проде на критическом пути (цена, акция, кассовый сценарий, наличие, слот доставки).",
     formula: "median(prod_ready_at − request_approved_at) по P1/P2 изменениям",
-    owner: "CIO + владельцы доменов",
+    ownerId: "biztech",
+    coOwnerIds: ["eng", "retail", "cto-loyalty", "cto-supply", "cto-replenish", "cto-transport", "cto-wfm", "cto-corp"],
     cadence: "неделя",
     localChampion: "6–16 недель",
     year1: "≤ 15 рабочих дней",
@@ -108,7 +200,8 @@ export const METRICS: Metric[] = [
     name: "NPS внутреннего клиента",
     definition:
       "NPS директоров магазинов, коммерции и логистики по ИТ-сервису. Отдельно: доля «очень разочаруюсь, если платформа X исчезнет» по 5 ключевым системам.",
-    owner: "CIO + бизнес-заказчики",
+    ownerId: "retail",
+    coOwnerIds: ["biztech", "infra", "cto-loyalty", "cto-supply"],
     cadence: "квартал",
     localChampion: "не меряют или NPS < 10",
     year1: "NPS ≥ 20, охват ≥ 40% магазинов",
@@ -122,7 +215,8 @@ export const METRICS: Metric[] = [
     name: "Time-to-promo / time-to-price",
     definition:
       "Время от решения коммерции «запускаем акцию / меняем цену» до отражения на кассе, ценнике и витрине во всех каналах.",
-    owner: "CPO коммерческих систем + коммерция",
+    ownerId: "cto-loyalty",
+    coOwnerIds: ["retail", "biztech", "data"],
     cadence: "неделя",
     localChampion: "7–30 дней, часто руками",
     year1: "≤ 48 часов штатно, ≤ 4 часов срочно",
@@ -137,7 +231,8 @@ export const METRICS: Metric[] = [
     definition:
       "Процент потребностей бизнеса (отчёты, доступы, типовые изменения, выгрузки, заведение акции в шаблоне), закрытых без тикета в ИТ.",
     formula: "self_served_requests / (self_served + tickets)",
-    owner: "Владельцы платформ",
+    ownerId: "biztech",
+    coOwnerIds: ["infra", "data", "cto-corp", "cto-loyalty", "cto-wfm"],
     cadence: "месяц",
     localChampion: "5–15%",
     year1: "≥ 30%",
@@ -151,7 +246,8 @@ export const METRICS: Metric[] = [
     name: "Тикеты на магазин в месяц",
     definition:
       "Входящие инциденты и сервис-запросы на 1 магазин. Падение при росте сети — знак платформы. Рост при той же сети — знак toil.",
-    owner: "Head of Service / SRE",
+    ownerId: "infra",
+    coOwnerIds: ["retail", "cto-wfm"],
     cadence: "месяц",
     localChampion: "растёт вместе с «цифровизацией»",
     year1: "−30% к базовому году",
@@ -165,7 +261,8 @@ export const METRICS: Metric[] = [
     name: "SLO кассы и критических путей",
     definition:
       "Доступность POS, онлайн-оплаты, наличия, WMS в часы торговли. Отдельно — пиковые дни (зарплата, 23 февраля, 8 марта, НГ, 11.11).",
-    owner: "SRE + владельцы доменов",
+    ownerId: "infra",
+    coOwnerIds: ["retail", "eng", "cto-supply", "cto-loyalty"],
     cadence: "неделя",
     localChampion: "«в целом работает», без SLO",
     year1: "99.9% торговые часы; пик 99.95%",
@@ -179,7 +276,15 @@ export const METRICS: Metric[] = [
     name: "Lead time for changes (DORA)",
     definition:
       "От коммита в основную ветку критической системы до продакшена. Скорость обучения ИТ, не «производительность кодеров».",
-    owner: "CTO / Head of Engineering",
+    ownerId: "eng",
+    coOwnerIds: [
+      "cto-loyalty",
+      "cto-corp",
+      "cto-transport",
+      "cto-supply",
+      "cto-replenish",
+      "cto-wfm",
+    ],
     cadence: "неделя",
     localChampion: "релиз раз в квартал, CAB на всё",
     year1: "≤ 7 дней для цифровых контуров",
@@ -193,7 +298,8 @@ export const METRICS: Metric[] = [
     name: "Deployment frequency",
     definition:
       "Как часто изменения доходят до кассы, витрины, WMS, лояльности. Высокая частота при низком CFR — зрелость.",
-    owner: "Head of Engineering",
+    ownerId: "eng",
+    coOwnerIds: ["cto-loyalty", "cto-supply", "cto-replenish", "cto-transport", "cto-wfm", "cto-corp"],
     cadence: "неделя",
     localChampion: "месяц / квартал",
     year1: "еженедельно на цифровых",
@@ -207,7 +313,8 @@ export const METRICS: Metric[] = [
     name: "Change fail rate",
     definition:
       "Доля релизов, которые вызвали инцидент в магазине/канале, откат или хотфикс в 24 часа.",
-    owner: "Head of Engineering + SRE",
+    ownerId: "eng",
+    coOwnerIds: ["infra"],
     cadence: "неделя",
     localChampion: "20–40% или неизвестно",
     year1: "≤ 15%",
@@ -221,7 +328,8 @@ export const METRICS: Metric[] = [
     name: "MTTR P1",
     definition:
       "Время восстановления критического сервиса (касса, оплата, складской контур, сайт в пик). Минута кассы имеет цену.",
-    owner: "SRE",
+    ownerId: "infra",
+    coOwnerIds: ["eng", "retail"],
     cadence: "неделя",
     localChampion: "часы, герои в чате",
     year1: "≤ 30 мин",
@@ -235,7 +343,8 @@ export const METRICS: Metric[] = [
     name: "Peak readiness",
     definition:
       "Доля критических систем с нагрузкой ≥ 2× пика прошлого сезона, откатанным runbook и дежурством. Прогон не слайд.",
-    owner: "SRE + CIO",
+    ownerId: "infra",
+    coOwnerIds: ["biztech", "retail", "cto-supply", "cto-loyalty", "cto-transport"],
     cadence: "квартал",
     localChampion: "совещание «к Новому году» в декабре",
     year1: "100% P0 систем, 1 полный прогон за 6 недель до пика",
@@ -249,7 +358,8 @@ export const METRICS: Metric[] = [
     name: "Доля bar-raising найма",
     definition:
       "Процент офферов, где комитет подтвердил: человек поднимает планку команды. ИТ на 6500 не имеет права набирать «руки на проект».",
-    owner: "CIO + People",
+    ownerId: "people",
+    coOwnerIds: ["eng", "biztech"],
     cadence: "месяц",
     localChampion: "закрываем вакансию любой ценой",
     year1: "≥ 80%",
@@ -263,7 +373,8 @@ export const METRICS: Metric[] = [
     name: "Regrettable attrition топ-квартиля",
     definition:
       "Добровольный уход верхних 25% по влиянию в ИТ. Это единственная текучка, которая убивает шанс догнать гигантов.",
-    owner: "CIO + People",
+    ownerId: "people",
+    coOwnerIds: ["biztech", "eng"],
     cadence: "квартал",
     localChampion: "считают общую текучку",
     year1: "≤ 10%",
@@ -277,7 +388,8 @@ export const METRICS: Metric[] = [
     name: "Доля ИТ во внешнем контуре",
     definition:
       "Процент критического пути (касса, омниканал, пополнение), где изменение нельзя выкатить без внешнего интегратора. Гиганты держат мозг внутри.",
-    owner: "CIO",
+    ownerId: "biztech",
+    coOwnerIds: ["cto-loyalty", "cto-supply", "cto-replenish", "cto-transport", "cfo"],
     cadence: "квартал",
     localChampion: "интегратор — фактический CTO домена",
     year1: "карта зависимостей, −20% блокирующих",
@@ -291,7 +403,8 @@ export const METRICS: Metric[] = [
     name: "Time to productivity",
     definition:
       "Дни до первого самостоятельного продакшен-вклада ожидаемого размера. Онбординг — продукт.",
-    owner: "Eng managers",
+    ownerId: "people",
+    coOwnerIds: ["eng", "infra"],
     cadence: "месяц",
     localChampion: "3–6 месяцев, неделя без доступов",
     year1: "≤ 30 дней",
@@ -305,7 +418,8 @@ export const METRICS: Metric[] = [
     name: "Сильный IC-трек",
     definition:
       "Доля staff+/principal инженеров среди ИТ, которым не нужно становиться начальниками, чтобы расти в деньгах и статусе.",
-    owner: "People + CIO",
+    ownerId: "people",
+    coOwnerIds: ["eng"],
     cadence: "квартал",
     localChampion: "единственный рост — руководитель 2–3 человек",
     year1: "грейды IC описаны и применены, ≥ 5 staff+",
@@ -320,7 +434,8 @@ export const METRICS: Metric[] = [
     definition:
       "Оpex ИТ (run + change, без капитализации-игры) на магазин и на 1000 чеков. Не «сжечь бюджет», а удешевить единицу сервиса при том же или лучшем SLO.",
     formula: "IT_opex / stores ; IT_opex / (receipts / 1000)",
-    owner: "CIO + CFO бизнес-партнёр",
+    ownerId: "cfo",
+    coOwnerIds: ["biztech", "infra"],
     cadence: "квартал",
     localChampion: "есть годовой бюджет, нет юнита",
     year1: "юнит заведён, тренд понятен",
@@ -334,7 +449,8 @@ export const METRICS: Metric[] = [
     name: "Run vs change",
     definition:
       "Доля ИТ-мощности на сопровождение и ручной toil vs создание нового. Гиганты сознательно жмут run через платформу, не через ещё одну линию поддержки.",
-    owner: "CIO",
+    ownerId: "biztech",
+    coOwnerIds: ["cfo", "infra", "eng"],
     cadence: "квартал",
     localChampion: "70–85% run",
     year1: "run ≤ 65%",
@@ -348,7 +464,8 @@ export const METRICS: Metric[] = [
     name: "Toil как доля инженерии",
     definition:
       "Доля времени инженеров на ручную, повторяемую работу, которую можно автоматизировать (выкладки, доступы, ручные сверки, «перезалей»).",
-    owner: "Eng managers + SRE",
+    ownerId: "eng",
+    coOwnerIds: ["infra", "ai"],
     cadence: "месяц",
     localChampion: "40–60%, не считают",
     year1: "≤ 35%, toil виден",
@@ -362,7 +479,8 @@ export const METRICS: Metric[] = [
     name: "Доля undifferentiated vendor spend",
     definition:
       "Лицензии и услуги, которые не дифференцируют ритейл (почта, AD, типовой HR) vs деньги в ядро (касса, омниканал, пополнение). Ядро не отдавать в вечную T&M.",
-    owner: "CIO + закупки",
+    ownerId: "cfo",
+    coOwnerIds: ["biztech", "cto-corp"],
     cadence: "квартал",
     localChampion: "не разделены",
     year1: "карта spend, ядро ≥ 55% change-бюджета",
@@ -376,7 +494,8 @@ export const METRICS: Metric[] = [
     name: "Decision latency",
     definition:
       "Медиана от RFC/служебной записки до явного да/нет. Скорость ИТ как системы согласований.",
-    owner: "Аппарат CIO",
+    ownerId: "biztech",
+    coOwnerIds: ["eng"],
     cadence: "неделя",
     localChampion: "2–6 недель, «на комитете»",
     year1: "≤ 7 дней",
@@ -390,7 +509,8 @@ export const METRICS: Metric[] = [
     name: "Часы встреч на IC в неделю",
     definition:
       "Календарь индивидуальных инженеров и аналитиков. Встреча — дорогой способ координации.",
-    owner: "Руководители доменов",
+    ownerId: "eng",
+    coOwnerIds: ["people", "cto-loyalty", "cto-corp", "cto-transport", "cto-supply", "cto-replenish", "cto-wfm"],
     cadence: "месяц",
     localChampion: "15–25 часов",
     year1: "≤ 8 часов",
@@ -404,7 +524,8 @@ export const METRICS: Metric[] = [
     name: "WIP на команду / портфель",
     definition:
       "Число параллельных инициатив команды и число корпоративных «стратегических ИТ-программ». Мультизадачность убивает lead time.",
-    owner: "CIO + PMO (если жив)",
+    ownerId: "biztech",
+    coOwnerIds: ["cto-loyalty", "cto-corp", "cto-transport", "cto-supply", "cto-replenish", "cto-wfm"],
     cadence: "неделя",
     localChampion: "8–20 тем на команду, 50 программ в компании",
     year1: "≤ 3 на команду, ≤ 12 программ ИТ",
@@ -418,7 +539,8 @@ export const METRICS: Metric[] = [
     name: "Очередь на изменение (CAB/РК)",
     definition:
       "Доля изменений, которые ждут комитет дольше, чем само внедрение. Стандартные изменения — по авто-допуску с откатом, не через театр CAB.",
-    owner: "CTO + ИБ + SRE",
+    ownerId: "infra",
+    coOwnerIds: ["eng"],
     cadence: "месяц",
     localChampion: "CAB на каждый чих",
     year1: "≥ 60% изменений — standard/auto",
@@ -426,7 +548,285 @@ export const METRICS: Metric[] = [
     year5: "комитет разбирает инциденты и исключения, не очередь релизов",
     redFlag: "ИБ и CAB — единственный «контроль качества»",
   },
+  {
+    id: "ai-prod",
+    loop: "delivery",
+    name: "ИИ на критическом пути в проде",
+    definition:
+      "Число и доля ключевых ритейл-путей (прогноз, промо, поиск, поддержка магазина, контент), где модель работает в проде со SLO, владельцем и откатом. Пилот на слайде не считается.",
+    ownerId: "ai",
+    coOwnerIds: ["data", "cto-replenish", "cto-loyalty", "eng"],
+    cadence: "квартал",
+    localChampion: "PoC и демо, прод пустой",
+    year1: "≥ 2 пути в проде со SLO",
+    year3: "≥ 5 путей, каждый с error budget",
+    year5: "ИИ — слой платформы, не набор пилотов",
+    redFlag: "KPI директора ИИ = число пилотов",
+  },
+  {
+    id: "ai-toil",
+    loop: "capital",
+    name: "Часы toil, снятые ИИ и автоматизацией",
+    definition:
+      "Подтверждённые часы ручной работы (сверки, разбор тикетов L1, разметка, типовые ответы магазину), которые больше не делаются людьми. Считается по факту процесса, не по обещанию вендора.",
+    ownerId: "ai",
+    coOwnerIds: ["infra", "eng", "data"],
+    cadence: "квартал",
+    localChampion: "не считают",
+    year1: "≥ 15% toil L1/сверки снято",
+    year3: "≥ 40%",
+    year5: "≥ 60% типового L1 без человека",
+    redFlag: "Чат-бот есть, тикеты не упали",
+  },
+  {
+    id: "ai-quality",
+    loop: "delivery",
+    name: "Качество прод-ИИ",
+    definition:
+      "Доля ошибочных решений модели на путях, которые трогают цену, остаток, промо или ответ магазину. Есть human override и журнал.",
+    ownerId: "ai",
+    coOwnerIds: ["data", "retail", "cto-replenish"],
+    cadence: "неделя",
+    localChampion: "качество не меряют",
+    year1: "метрика качества на каждом прод-пути, override задокументирован",
+    year3: "ошибка ниже согласованного порога бизнеса",
+    year5: "качество — часть SLO домена, не отдельный отчёт DS",
+    redFlag: "Модель крутится, за ошибки отвечает магазин",
+  },
+  {
+    id: "data-fresh",
+    loop: "market",
+    name: "Свежесть критических данных",
+    definition:
+      "Доля витрин «цена / остаток / промо / клиент», которые укладываются в SLA свежести (минуты–часы, не «ночная выгрузка опоздала»).",
+    ownerId: "data",
+    coOwnerIds: ["cto-replenish", "cto-loyalty", "cto-supply", "infra"],
+    cadence: "неделя",
+    localChampion: "ночные ETL, срывы в пик",
+    year1: "SLA на 5 витринах, ≥ 95% попадания",
+    year3: "≥ 99% в торговые часы",
+    year5: "near real-time на остатке и цене",
+    redFlag: "Коммерция не верит остатку и живёт в Excel",
+  },
+  {
+    id: "data-trust",
+    loop: "market",
+    name: "Доверие к карточке товара",
+    definition:
+      "Полнота и сходимость критических полей SKU (цена, штрихкод, остаток, НДС) между кассой, витриной и пополнением.",
+    ownerId: "data",
+    coOwnerIds: ["cto-loyalty", "cto-replenish", "retail"],
+    cadence: "месяц",
+    localChampion: "расхождения «как всегда»",
+    year1: "критические поля ≥ 98% сходятся",
+    year3: "≥ 99.5%",
+    year5: "расхождение — инцидент P2, не быт",
+    redFlag: "Три системы — три цены",
+  },
+  {
+    id: "data-self",
+    loop: "market",
+    name: "Self-service аналитики",
+    definition:
+      "Доля вопросов коммерции и операций, закрытых сертифицированными витринами / self-serve без тикета в data-команду.",
+    ownerId: "data",
+    coOwnerIds: ["biztech", "cto-replenish", "cto-loyalty"],
+    cadence: "месяц",
+    localChampion: "каждая выгрузка — заявка",
+    year1: "≥ 40%",
+    year3: "≥ 65%",
+    year5: "≥ 80%",
+    redFlag: "Аналитики — очередь Excel, не платформа",
+  },
+  {
+    id: "loyalty-id",
+    loop: "market",
+    name: "Доля идентифицированных чеков",
+    definition:
+      "Чеки с устойчивым ID покупателя (карта, приложение, согласованный идентификатор). База персонализации и промо, не «программа лояльности на слайде».",
+    ownerId: "cto-loyalty",
+    coOwnerIds: ["retail", "data"],
+    cadence: "месяц",
+    localChampion: "не меряют или < 20%",
+    year1: "траектория +10 п.п. к базе, SLA кассы не падает",
+    year3: "уровень сильного продуктового ритейла сети",
+    year5: "идентификация — гигиена кассы, не акция",
+    redFlag: "Рост ID ценой очереди на кассе",
+  },
+  {
+    id: "campaign-lead",
+    loop: "market",
+    name: "Lead time кампании лояльности",
+    definition:
+      "От брифа маркетинга до работающей механики в кассе, приложении и каналах. Не путать с time-to-promo полки — это контур CRM/лояльности.",
+    ownerId: "cto-loyalty",
+    coOwnerIds: ["biztech", "data", "ai"],
+    cadence: "неделя",
+    localChampion: "3–8 недель, агентство и интегратор",
+    year1: "≤ 10 рабочих дней шаблонной кампании",
+    year3: "≤ 3 дней, self-service маркетинга",
+    year5: "часы для шаблона",
+    redFlag: "Каждая механика — новый проект",
+  },
+  {
+    id: "corp-lead",
+    loop: "market",
+    name: "Lead time корпоративного сервиса",
+    definition:
+      "Медиана от запроса сотрудника/функции (справка, роль, типовой отчёт финансов, онбординг учётки) до исполненного сервиса.",
+    ownerId: "cto-corp",
+    coOwnerIds: ["people", "cfo", "infra"],
+    cadence: "месяц",
+    localChampion: "1–4 недели, эскалации",
+    year1: "≤ 5 рабочих дней типового",
+    year3: "≤ 1 дня / сразу self-service",
+    year5: "минуты для 80% запросов сотрудника",
+    redFlag: "Корпоративный контур — вечная очередь, ядро ритейла голодает из‑за него",
+  },
+  {
+    id: "corp-self",
+    loop: "market",
+    name: "Self-service сотрудника",
+    definition:
+      "Доля типовых HR/админ/фин запросов без тикета в ИТ: отпуска, справки, доступы к типовым системам, командировки.",
+    ownerId: "cto-corp",
+    coOwnerIds: ["people", "infra"],
+    cadence: "месяц",
+    localChampion: "всё через заявку",
+    year1: "≥ 40%",
+    year3: "≥ 70%",
+    year5: "≥ 85%",
+    redFlag: "Service Desk живёт корпоративными мелочами, магазины ждут",
+  },
+  {
+    id: "tms-slo",
+    loop: "delivery",
+    name: "SLO транспорта и слотов",
+    definition:
+      "Доступность TMS/слотов/трекинга в окне рейсов и пик доставки. Срыв слота = срыв полки.",
+    ownerId: "cto-transport",
+    coOwnerIds: ["infra", "cto-supply", "retail"],
+    cadence: "неделя",
+    localChampion: "без SLO",
+    year1: "99.5% в окне рейсов, пик отдельно",
+    year3: "99.9% / пик 99.95%",
+    year5: "как у сильного 3PL/ритейл-логистики",
+    redFlag: "Рейсы крутят в Excel, когда «система повисла»",
+  },
+  {
+    id: "transport-lead",
+    loop: "market",
+    name: "Lead time правила перевозки",
+    definition:
+      "Время от решения логистики (тариф, зона, окно, подрядчик) до работающего правила в TMS и на слоте.",
+    ownerId: "cto-transport",
+    coOwnerIds: ["biztech", "eng"],
+    cadence: "месяц",
+    localChampion: "2–8 недель",
+    year1: "≤ 10 рабочих дней",
+    year3: "≤ 3 дней",
+    year5: "self-service логистики на шаблоне",
+    redFlag: "Каждый тариф — задача интегратору",
+  },
+  {
+    id: "wms-slo",
+    loop: "delivery",
+    name: "SLO WMS / приёмки / отгрузки",
+    definition:
+      "Доступность складского контура в смену DC. Простой приёмки в пик поставки бьёт полку через дни.",
+    ownerId: "cto-supply",
+    coOwnerIds: ["infra", "cto-replenish", "retail"],
+    cadence: "неделя",
+    localChampion: "без SLO, герои склада",
+    year1: "99.5% в смену, пик 99.9%",
+    year3: "99.9% / пик 99.95%",
+    year5: "error budget явный, простой — P1",
+    redFlag: "Приёмка на бумаге «пока чиним»",
+  },
+  {
+    id: "supply-lead",
+    loop: "market",
+    name: "Lead time складского процесса",
+    definition:
+      "От решения цепочки (новый тип возврата, кросс-док, правило приёмки) до работающего процесса в WMS.",
+    ownerId: "cto-supply",
+    coOwnerIds: ["biztech", "eng", "cto-transport"],
+    cadence: "месяц",
+    localChampion: "квартал и интегратор",
+    year1: "≤ 20 рабочих дней",
+    year3: "≤ 5 дней для шаблона",
+    year5: "конфигурация домена, не проект",
+    redFlag: "Любое «новое правило приёмки» = программа",
+  },
+  {
+    id: "replenish-cycle",
+    loop: "market",
+    name: "Цикл прогноза и пополнения",
+    definition:
+      "Календарное время от факта продажи/остатка до обновлённого заказа на пополнение. Гиганты живут часами, не недельной выгрузкой.",
+    ownerId: "cto-replenish",
+    coOwnerIds: ["data", "ai", "cto-supply"],
+    cadence: "неделя",
+    localChampion: "неделя+, ручные корректировки",
+    year1: "суточный цикл на топ-SKU, SLA свежести данных",
+    year3: "≤ 4 часов на автопополнение ядра ассортимента",
+    year5: "непрерывный цикл, человек — исключение",
+    redFlag: "Прогноз в Excel коммерции обходит систему",
+  },
+  {
+    id: "stock-trust",
+    loop: "market",
+    name: "Доля SKU с доверенным остатком",
+    definition:
+      "SKU, по которым касса, витрина и пополнение сходятся в пределах допуска. Без этого автопополнение — лотерея.",
+    ownerId: "cto-replenish",
+    coOwnerIds: ["data", "retail", "cto-supply"],
+    cadence: "месяц",
+    localChampion: "неизвестно / < 80%",
+    year1: "≥ 92% топ-оборачиваемых",
+    year3: "≥ 97%",
+    year5: "≥ 99%, расхождение = инцидент",
+    redFlag: "Автозаказ выключен, потому что остатку не верят",
+  },
+  {
+    id: "wfm-lead",
+    loop: "market",
+    name: "Lead time графика магазина",
+    definition:
+      "От решения управляющего/WFM (смена, выход, усиление к пику) до того, как сотрудник видит график в рабочем канале.",
+    ownerId: "cto-wfm",
+    coOwnerIds: ["retail", "people"],
+    cadence: "неделя",
+    localChampion: "бумага, чаты, 1С с лагом в дни",
+    year1: "≤ 4 часов до публикации",
+    year3: "минуты, self-service управляющего",
+    year5: "график — живой контур под трафик, не файл пятницы",
+    redFlag: "Пик закрывают звонками, система не успевает",
+  },
+  {
+    id: "wfm-self",
+    loop: "market",
+    name: "Self-service управляющего по сменам",
+    definition:
+      "Доля типовых операций WFM (пересмена, подмена, открытие слота) без тикета в ИТ и без центрального табельщика.",
+    ownerId: "cto-wfm",
+    coOwnerIds: ["retail", "people", "infra"],
+    cadence: "месяц",
+    localChampion: "всё через заявку или табельщика",
+    year1: "≥ 40%",
+    year3: "≥ 70%",
+    year5: "≥ 85%",
+    redFlag: "ИТ в контуре каждой подмены кассира",
+  },
 ];
+
+export function metricsForRole(roleId: RoleId) {
+  const primary = METRICS.filter((metric) => metric.ownerId === roleId);
+  const contributing = METRICS.filter(
+    (metric) => metric.ownerId !== roleId && metric.coOwnerIds.includes(roleId),
+  );
+  return { primary, contributing };
+}
 
 export const BOARD_SCORECARD = [
   "journey-lead",
@@ -622,24 +1022,32 @@ export const REWARDS = {
   ],
   who: [
     {
-      role: "Команда домена (инженеры, аналитики, product)",
-      basedOn: "Формула 45/35/20 домена. Общая.",
+      role: "Директор по технологическому развитию бизнеса",
+      basedOn: "Board: lead time ценности, self-service, WIP, run vs change. Не размер портфеля.",
     },
     {
-      role: "SRE / платформа",
-      basedOn: "SLO потребителей, adoption платформы, toil вниз. Не «количество серверов».",
+      role: "Директор по разработке",
+      basedOn: "DORA, CFR, toil разработки. Совместно с CTO доменов по lead time их систем.",
     },
     {
-      role: "Руководитель домена",
-      basedOn: "Та же формула плюс: bar-raising найм, regrettable attrition, WIP. Не размер штата.",
+      role: "Директор по инфраструктуре и поддержке",
+      basedOn: "SLO кассы, MTTR, пик, тикеты магазинов. On-call как дежурство, не доблесть.",
     },
     {
-      role: "CIO / штаб",
-      basedOn: "12 board-метрик и пик. Не «освоение бюджета».",
+      role: "Директор по данным / Директор по ИИ",
+      basedOn: "Свежесть и доверие данных; ИИ в проде со SLO, не число пилотов.",
     },
     {
-      role: "Подрядчик",
-      basedOn: "Оплата за исход и SLO, не T&M часы. Премии внутренних за перевод знания внутрь, не за вечную зависимость.",
+      role: "Финансовый директор / Директор по персоналу",
+      basedOn: "Unit cost и vendor; планка найма, regrettable attrition, IC-трек.",
+    },
+    {
+      role: "Директор по ритейл операциям",
+      basedOn: "NPS магазинов и заказчик SLO кассы. Shared OKR, не «зритель ИТ».",
+    },
+    {
+      role: "CTO доменов (лояльность, корпфункции, транспорт, цепочки, пополнение, WFM)",
+      basedOn: "Свои lead time / SLO / self-service домена + 20% корпоративного пика. Премия команды домена общая.",
     },
   ],
   forbid: [

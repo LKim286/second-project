@@ -6,6 +6,7 @@ import { GoalsSection } from "@/components/goals-section";
 import { AntipatternsSection } from "@/components/antipatterns-section";
 import { Hero } from "@/components/hero";
 import { MetricsSection } from "@/components/metrics-section";
+import { OwnersSection } from "@/components/owners-section";
 import { RewardsSection } from "@/components/rewards-section";
 import { SiteHeader } from "@/components/site-header";
 import { StartSection } from "@/components/start-section";
@@ -18,6 +19,7 @@ export default function Home() {
         <Hero />
         <ConceptSection />
         <MetricsSection />
+        <OwnersSection />
         <GoalsSection />
         <RewardsSection />
         <CultureSection />
