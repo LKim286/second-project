@@ -13,25 +13,30 @@ Playbook для внутреннего ИТ-подразделения розн�
 
 ## Открыть у себя на компьютере
 
-Нужен [Node.js 20+](https://nodejs.org/). На Mac после установки Homebrew сначала добавьте его в PATH:
+Три разные вещи, их не нужно путать:
+
+1. **Node.js / `brew install node`** — один раз на компьютер.
+2. **`npm install`** — один раз в папке проекта (скачивает библиотеки сайта). Повторить только после `git pull`, если изменились зависимости.
+3. **`npm run dev`** — каждый раз, когда хотите смотреть сайт: это запуск, не установка. Пока это окно терминала открыто, сайт работает. Закрыли терминал или выключили мак — запустите снова.
+
+Сайт: [http://127.0.0.1:43145](http://127.0.0.1:43145). Остановка: `Ctrl+C` в том терминале.
+
+Первый запуск, если ещё не делали:
 
 ```bash
 eval "$(/opt/homebrew/bin/brew shellenv zsh)"
-brew install node
-```
-
-Затем в папке проекта:
-
-```bash
-git clone https://github.com/LKim286/second-project.git
-cd second-project
+cd ~/second-project
 npm install
 npm run dev
 ```
 
-Сайт: [http://127.0.0.1:43145](http://127.0.0.1:43145).
+Потом обычно достаточно:
 
-Новый терминал после `brew install` должен видеть `npm`. Если нет — снова выполните `eval "$(/opt/homebrew/bin/brew shellenv zsh)"`.
+```bash
+eval "$(/opt/homebrew/bin/brew shellenv zsh)"
+cd ~/second-project
+npm run dev
+```
 
 ## Стек
 
