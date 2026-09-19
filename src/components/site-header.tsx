@@ -11,24 +11,22 @@ export function SiteHeader() {
   const [active, setActive] = useState("concept");
 
   useEffect(() => {
-    const nodes = NAV.map((item) => document.getElementById(item.id)).filter(
-      (node): node is HTMLElement => Boolean(node),
-    );
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible?.target.id) {
-          setActive(visible.target.id);
+    const onScroll = () => {
+      const offset = 96;
+      let current = NAV[0].id;
+      for (const item of NAV) {
+        const node = document.getElementById(item.id);
+        if (!node) continue;
+        if (node.getBoundingClientRect().top - offset <= 0) {
+          current = item.id;
         }
-      },
-      { rootMargin: "-20% 0px -65% 0px", threshold: [0.1, 0.25, 0.5] },
-    );
+      }
+      setActive(current);
+    };
 
-    nodes.forEach((node) => observer.observe(node));
-    return () => observer.disconnect();
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
