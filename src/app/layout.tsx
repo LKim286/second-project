@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { Geist_Mono, Manrope, Unbounded } from "next/font/google";
 import "./globals.css";
 
@@ -18,12 +19,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ОС эффективности — мировое лидерство",
+  title: "ОС эффективности — ИТ ритейла",
   description:
-    "Концепция эффективности для российской ИТ-компании: метрики, цели на 12 месяцев / 3 года / 5 лет и культура, без которой мировое лидерство не собирается.",
+    "Дорожная карта технологического паритета для внутреннего ИТ розничной сети: метрики без выручки, каденция и система вознаграждения.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: ReactNode;
+}>) {
   return (
     <html
       lang="ru"

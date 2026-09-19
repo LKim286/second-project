@@ -8,12 +8,12 @@ import { cn } from "@/lib/utils";
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
-  const [active, setActive] = useState("concept");
+  const [active, setActive] = useState<(typeof NAV)[number]["id"]>("concept");
 
   useEffect(() => {
     const onScroll = () => {
       const offset = 96;
-      let current = NAV[0].id;
+      let current: (typeof NAV)[number]["id"] = NAV[0].id;
       for (const item of NAV) {
         const node = document.getElementById(item.id);
         if (!node) continue;

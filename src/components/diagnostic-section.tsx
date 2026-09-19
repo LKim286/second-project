@@ -7,7 +7,7 @@ import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress
 import { DIAGNOSTIC, scoreLabel } from "@/lib/playbook";
 import { cn } from "@/lib/utils";
 
-const STORAGE_KEY = "efficiency-os-diagnostic";
+const STORAGE_KEY = "efficiency-os-diagnostic-retail";
 const EVENT = "efficiency-os-diagnostic";
 
 function subscribe(onStoreChange: () => void) {
@@ -47,9 +47,9 @@ export function DiagnosticSection() {
   return (
     <Section
       id="diagnostic"
-      eyebrow="07 — Диагностика"
+      eyebrow="08 — Диагностика"
       title="Двадцать вопросов. Честный «нет» ценнее красивого «да»"
-      lead="Отметьте только то, что правда сегодня, а не в дорожной карте. Результат сохраняется в браузере. Это не аудит и не ESG-анкета — это проверка, собрана ли машина, без которой мировое лидерство остаётся презентацией."
+      lead="Отметьте только то, что правда сегодня, не в дорожной карте к сезону. Результат в браузере. Это проверка, собрана ли машина, без которой паритет с гигантами остаётся слайдом."
     >
       <div className="rounded-2xl border border-border bg-card/50 p-5 sm:p-7">
         <Progress value={score} className="mb-2">

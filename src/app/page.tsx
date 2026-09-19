@@ -6,6 +6,7 @@ import { GoalsSection } from "@/components/goals-section";
 import { AntipatternsSection } from "@/components/antipatterns-section";
 import { Hero } from "@/components/hero";
 import { MetricsSection } from "@/components/metrics-section";
+import { RewardsSection } from "@/components/rewards-section";
 import { SiteHeader } from "@/components/site-header";
 import { StartSection } from "@/components/start-section";
 
@@ -18,6 +19,7 @@ export default function Home() {
         <ConceptSection />
         <MetricsSection />
         <GoalsSection />
+        <RewardsSection />
         <CultureSection />
         <CadenceSection />
         <AntipatternsSection />
@@ -26,8 +28,8 @@ export default function Home() {
       </main>
       <footer className="border-t border-border py-10">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-          <p>ОС эффективности · playbook для российской ИТ-компании с мировой амбицией</p>
-          <p>Метрики — приборы. Культура — ОС. Лидерство — исход клиента.</p>
+          <p>ОС эффективности · внутреннее ИТ ритейла, компания ~6500</p>
+          <p>Метрики — приборы. Премия — за кассу и пик. Паритет — практики, не выручка.</p>
         </div>
       </footer>
     </>

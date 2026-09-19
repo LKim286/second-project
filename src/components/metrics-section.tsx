@@ -23,7 +23,7 @@ function MetricCard({ metric, board }: { metric: Metric; board: boolean }) {
       ) : null}
       <dl className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <dt className="text-xs text-muted-foreground">Локальный чемпион</dt>
+          <dt className="text-xs text-muted-foreground">Типичное ИТ ритейла</dt>
           <dd className="mt-1 text-sm">{metric.localChampion}</dd>
         </div>
         <div>
@@ -64,8 +64,8 @@ export function MetricsSection() {
     <Section
       id="metrics"
       eyebrow="02 — Метрики"
-      title="Двенадцать чисел для совета. Остальное — приборы контуров"
-      lead="Мировое лидерство не измеряется восемьюдесятью дашбордами. Совет держит 12 метрик, у каждой есть владелец, каденция, порог на трёх горизонтах и красный флаг. Диагностика живёт ниже — у CTO, CPO, People и CFO."
+      title="Двенадцать чисел для штаба и розницы. Остальное — приборы доменов"
+      lead="Правлению и коммерческому директору не нужны 80 дашбордов. Одна страница: 12 метрик, владелец, каденция, порог на 12 месяцев / 3 года / 5 лет, красный флаг. Выручки нет — поэтому нет NRR и Rule of 40. Есть касса, акция, пик и стоимость 1000 чеков."
     >
       <div className="flex flex-wrap gap-2">
         <Button
@@ -89,7 +89,7 @@ export function MetricsSection() {
 
       <p className={cn("mt-6 text-sm text-muted-foreground")}>
         {loopId === "board"
-          ? "Страница совета: рынок, поставка, талант, капитал, трение. Если метрики нет здесь — её нет в презентации для борда."
+          ? "Страница штаба: бизнес, поставка, талант, стоимость сервиса, трение. Нет на странице — нет в докладе правлению."
           : LOOPS.find((loop) => loop.id === loopId)?.thesis}
       </p>
 
