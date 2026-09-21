@@ -27,6 +27,13 @@ function MetricCard({ metric, board }: { metric: Metric; board: boolean }) {
       {metric.formula ? (
         <p className="mt-3 font-mono text-xs text-primary">{metric.formula}</p>
       ) : null}
+      {metric.howTo ? (
+        <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm leading-6 text-muted-foreground">
+          {metric.howTo.map((step) => (
+            <li key={step}>{step.replace(/^\d+\.\s*/, "")}</li>
+          ))}
+        </ol>
+      ) : null}
       <dl className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <dt className="text-xs text-muted-foreground">Типичное ИТ ритейла</dt>
